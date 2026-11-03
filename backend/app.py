@@ -1,10 +1,11 @@
-import hashlib, json, logging, time
-from fastapi import FastAPI, File, Form, UploadFile
+import collections, hashlib, json, logging, math, time
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config as cfg
 from . import meta_client as mc
+from .prompts import LANG_NAMES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -13,7 +14,34 @@ log = logging.getLogger("nunchi")
 CACHE = cfg.ROOT / "cache"
 CACHE.mkdir(exist_ok=True)
 app = FastAPI(title=cfg.APP_NAME)
-_regions: dict[str, dict] = {}   # (image, tap) -> box, so switching language skips SAM
+_regions: "collections.OrderedDict[str, dict]" = collections.OrderedDict()  # (image, tap) -> box; LRU
+_REGIONS_MAX = 500
+_calls: dict[str, collections.deque] = collections.defaultdict(collections.deque)
+
+
+def _remember_region(key: str, box: dict):
+    _regions[key] = box
+    _regions.move_to_end(key)
+    while len(_regions) > _REGIONS_MAX:
+        _regions.popitem(last=False)
+
+
+def _gate(request: Request) -> JSONResponse | None:
+    """Before any live model call: live mode on and per-IP rate limit not exceeded."""
+    if not cfg.LIVE:
+        return JSONResponse({"error": "offline"}, status_code=503)
+    ip = request.client.host if request.client else "?"
+    now, q = time.time(), _calls[ip]
+    while q and now - q[0] > 60:
+        q.popleft()
+    if len(q) >= cfg.RATE_PER_MIN:
+        return JSONResponse({"error": "rate_limited"}, status_code=429)
+    q.append(now)
+    return None
+
+
+def _bad(msg: str) -> JSONResponse:
+    return JSONResponse({"error": "bad_request", "detail": msg}, status_code=400)
 
 
 def _key(*parts) -> str:
@@ -23,8 +51,7 @@ def _key(*parts) -> str:
 def _fail(e: Exception, where: str) -> JSONResponse:
     timeout = "timeout" in type(e).__name__.lower() or "timed out" in str(e).lower()
     log.warning("%s failed: %s: %s", where, type(e).__name__, str(e)[:200])
-    return JSONResponse({"error": "timeout" if timeout else "upstream", "detail": str(e)[:200]},
-                        status_code=504 if timeout else 502)
+    return JSONResponse({"error": "timeout" if timeout else "upstream"}, status_code=504 if timeout else 502)
 
 
 @app.get("/api/config")
@@ -64,12 +91,17 @@ def demo_image(name: str):
 
 
 @app.post("/api/segment")
-async def segment(image: UploadFile = File(...)):
-    raw = await image.read()
+async def segment(request: Request, image: UploadFile = File(...)):
+    raw = await image.read(cfg.MAX_UPLOAD_BYTES + 1)
     cached = _seg_path(hashlib.sha256(raw).hexdigest())
     if cached.exists():
         return json.loads(cached.read_text())
-    img = mc.load_image(raw)
+    if (blocked := _gate(request)):
+        return blocked
+    try:
+        img = mc.load_image(raw)
+    except Exception:
+        return _bad("unreadable or too large image")
     t = time.time()
     try:
         boxes = mc.sam_concept(img, "sign")
@@ -82,11 +114,16 @@ async def segment(image: UploadFile = File(...)):
 
 
 @app.post("/api/explain")
-async def explain(image: UploadFile = File(...), lang: str = Form("ja"),
+async def explain(request: Request, image: UploadFile = File(...), lang: str = Form("ja"),
                   nx: float | None = Form(None), ny: float | None = Form(None)):
     """nx, ny: tap position normalized 0-1 on the displayed photo.
     If the tap is inside a /api/segment candidate box, that box is used and the SAM point call is skipped."""
-    raw = await image.read()
+    raw = await image.read(cfg.MAX_UPLOAD_BYTES + 1)
+    if lang not in LANG_NAMES:
+        return _bad("unsupported lang")
+    if (nx is None) != (ny is None) or (nx is not None and not all(
+            math.isfinite(v) and 0 <= v <= 1 for v in (nx, ny))):
+        return _bad("nx, ny must both be in [0, 1]")
     digest = hashlib.sha256(raw).hexdigest()
     if nx is not None and ny is not None:
         nx, ny = round(nx, 3), round(ny, 3)
@@ -96,7 +133,12 @@ async def explain(image: UploadFile = File(...), lang: str = Form("ja"),
     if cached.exists():  # demo safety net: replay when the network fails
         return json.loads(cached.read_text()) | {"cached": True}
 
-    img = mc.load_image(raw)
+    if (blocked := _gate(request)):
+        return blocked
+    try:
+        img = mc.load_image(raw)
+    except Exception:
+        return _bad("unreadable or too large image")
     t0 = time.time()
     region_box, sam_source = None, "none"
     rkey = _key(digest, tap_id, cfg.MAX_SIDE)
@@ -119,7 +161,7 @@ async def explain(image: UploadFile = File(...), lang: str = Form("ja"),
                 region_box, sam_source = mc.fallback_box(img, px, py), "fallback"
                 if found:
                     log.info("sam_point rejected box=%s", found)
-            _regions[rkey] = region_box
+            _remember_region(rkey, region_box)
         t1 = time.time()
         # A box covering most of the photo adds nothing over the photo itself: send the photo only.
         whole = region_box is not None and mc.box_area(img, region_box) > cfg.SAM_MAX_AREA

@@ -25,3 +25,9 @@ SAM_MIN_AREA = 0.02    # box smaller than 2% of the image
 SAM_MAX_AREA = 0.80    # box larger than 80% of the image
 SAM_MIN_CONF = 0.40    # confidence below this
 FALLBACK_CROP = 0.35   # fallback crop side = 35% of the image's short side
+
+# Abuse limits (the app has no login; keep public deployments cheap)
+MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+MAX_PIXELS = 40_000_000            # reject decompression bombs before decoding
+RATE_PER_MIN = int(os.environ.get("RATE_PER_MIN", "20"))   # live model calls per client IP per minute
+LIVE = os.environ.get("LIVE", "1") == "1"  # 0 = serve cached results only (public demo link)

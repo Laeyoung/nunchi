@@ -13,7 +13,7 @@ def run(job):
     p, lang = job
     t = time.time()
     try:
-        r = mc.explain(mc.load_image(p.read_bytes()), None, lang)
+        r = mc.explain_hedged(mc.load_image(p.read_bytes()), None, lang)
     except Exception as e:  # keep going; the report shows the error
         r = {"error": str(e)}
     r["_s"] = round(time.time() - t, 1)

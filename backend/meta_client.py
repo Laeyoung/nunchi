@@ -25,8 +25,14 @@ def client() -> OpenAI:
 
 def load_image(raw: bytes, max_side: int | None = None) -> Image.Image:
     """Apply EXIF rotation (SAM coordinates must match the displayed image) and downscale."""
-    img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
+    if len(raw) > cfg.MAX_UPLOAD_BYTES:
+        raise ValueError("image too large")
+    img = Image.open(io.BytesIO(raw))
+    if img.width * img.height > cfg.MAX_PIXELS:
+        raise ValueError("image has too many pixels")
     side = max_side or cfg.MAX_SIDE
+    img.draft("RGB", (side, side))  # JPEG: decode at reduced scale (no-op for other formats)
+    img = ImageOps.exif_transpose(img).convert("RGB")
     img.thumbnail((side, side))
     return img
 
