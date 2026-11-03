@@ -18,6 +18,7 @@ MAX_SIDE = int(os.environ.get("MAX_SIDE", "1280"))         # longest image side 
 SEND_FULL = os.environ.get("SEND_FULL", "1") == "1"        # send full photo + crop (1) or crop only (0)
 REQUEST_TIMEOUT_S = float(os.environ.get("REQUEST_TIMEOUT_S", "20"))  # Muse Spark, total incl. hedge
 HEDGE_S = float(os.environ.get("HEDGE_S", "9"))  # send a duplicate Spark request if the first is slower
+MORE_TIMEOUT_S = float(os.environ.get("MORE_TIMEOUT_S", "25"))  # "Tell me more" (web search)
 SAM_TIMEOUT_S = float(os.environ.get("SAM_TIMEOUT_S", "8"))  # SAM point failure falls back to a fixed crop
 
 # SAM point result is rejected (-> fixed-size crop around the tap) when:

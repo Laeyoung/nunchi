@@ -41,7 +41,7 @@ def _gate(request: Request) -> JSONResponse | None:
     if len(_calls) > _CALLS_MAX:  # drop clients idle for over a minute
         for k in [k for k, v in _calls.items() if not v or now - v[-1] > 60]:
             del _calls[k]
-        if len(_calls) > _CALLS_MAX:
+        if len(_calls) > _CALLS_MAX and bucket not in _calls:  # table full: refuse only new clients
             return JSONResponse({"error": "rate_limited"}, status_code=429)
     q = _calls.setdefault(bucket, collections.deque())
     while q and now - q[0] > 60:
@@ -191,6 +191,25 @@ async def explain(request: Request, image: UploadFile = File(...), lang: str = F
     out = {"box": region_box, "region_source": sam_source, "image_size": [img.width, img.height],
            "result": result, "timing": timing}
     cached.write_text(json.dumps(out, ensure_ascii=False))
+    return out
+
+
+@app.post("/api/more")
+async def more(request: Request, korean_text: str = Form(...), meaning: str = Form(""), lang: str = Form("ja")):
+    """Details button: web-search-grounded background + 1-2 source links. Never called in the default flow."""
+    if lang not in LANG_NAMES or not (0 < len(korean_text) <= 300) or len(meaning) > 500:
+        return _bad("bad input")
+    cached = CACHE / f"more_{_key(korean_text, meaning, lang, cfg.SPARK_MODEL)}.json"
+    if cached.exists():
+        return json.loads(cached.read_text()) | {"cached": True}
+    if (blocked := _gate(request)):
+        return blocked
+    try:
+        out = mc.more(korean_text, meaning, lang)
+    except Exception as e:
+        return _fail(e, "more")
+    if out["text"]:
+        cached.write_text(json.dumps(out, ensure_ascii=False))
     return out
 
 

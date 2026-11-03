@@ -39,6 +39,9 @@
   @keyframes b { 0%,80%,100%{transform:scale(.4);opacity:.4} 40%{transform:scale(1);opacity:1} }
   .err { display:none; background:#fff; border-radius:16px; padding:14px; margin-top:14px; text-align:center; }
   .err button { background:var(--ink); color:#fff; margin-top:8px; }
+  .more { display:none; margin-top:12px; padding:12px; border-radius:12px; background:var(--soft); font-size:15px; line-height:1.5; }
+  .more a { display:block; font-size:12px; color:inherit; opacity:.7; margin-top:6px; word-break:break-all; }
+  #moreBtn { width:100%; margin-top:8px; background:transparent; border:1px solid rgba(0,0,0,.12); }
   .meta { font-size:11px; opacity:.4; margin-top:10px; text-align:right; }
 </style>
 </head>
@@ -64,19 +67,21 @@
     <div class="row bridge" id="bridgeRow"><span id="bridge"></span></div>
     <div class="low" id="low"></div>
     <div class="actions"><button id="play"></button><button id="playKo">🇰🇷 원음</button></div>
+    <button id="moreBtn"></button>
+    <div class="more" id="more"></div>
     <div class="meta" id="meta"></div>
   </div>
 </main>
 <script>
 const UI = {
   ja:{take:"📷 写真を撮る", hint:"知りたい文字をタップしてください", meaning:"意味", why:"なぜここに？", todo:"どうすればいい？",
-      play:"▶︎ 聞く", stop:"■ 止める", low:"自信が低い結果です", thinking:"読んでいます…",
+      play:"▶︎ 聞く", stop:"■ 止める", more:"🔎 もっと詳しく", moreWait:"調べています…", src:"出典", low:"自信が低い結果です", thinking:"読んでいます…",
       err:"うまく読み取れませんでした。", timeout:"時間がかかりすぎています。", retry:"もう一度", voice:"ja-JP"},
   en:{take:"📷 Take a photo", hint:"Tap the Korean text you want to understand", meaning:"Meaning", why:"Why is it here?", todo:"What should I do?",
-      play:"▶︎ Listen", stop:"■ Stop", low:"Low-confidence answer", thinking:"Reading the sign…",
+      play:"▶︎ Listen", stop:"■ Stop", more:"🔎 Tell me more", moreWait:"Looking it up…", src:"Source", low:"Low-confidence answer", thinking:"Reading the sign…",
       err:"Something went wrong.", timeout:"This is taking too long.", retry:"Try again", voice:"en-US"},
   zh:{take:"📷 拍照", hint:"点击你想了解的韩文", meaning:"意思", why:"为什么在这里？", todo:"我该怎么做？",
-      play:"▶︎ 收听", stop:"■ 停止", low:"置信度较低", thinking:"正在识别…",
+      play:"▶︎ 收听", stop:"■ 停止", more:"🔎 了解更多", moreWait:"正在查找…", src:"来源", low:"置信度较低", thinking:"正在识别…",
       err:"出了点问题。", timeout:"等待时间过长。", retry:"重试", voice:"zh-CN"},
 };
 // Preferred voices per language, best first (iOS / macOS / Chrome names).
@@ -151,6 +156,28 @@ async function explain(nx, ny){
     showError(err.name === "AbortError");
   } finally { clearTimeout(timer); $("spin").style.display = "none"; }
 }
+// "Tell me more": web-search-grounded background, only on request (keeps the main flow fast and cheap).
+async function tellMore(r){
+  const lang = $("lang").value, box = $("more"), btn = $("moreBtn");
+  btn.disabled = true; btn.textContent = UI[lang].moreWait;
+  const fd = new FormData(); fd.append("korean_text", r.korean_text); fd.append("meaning", r.meaning); fd.append("lang", lang);
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 30000);
+  try {
+    const res = await fetch("/api/more", {method:"POST", body:fd, signal:ctl.signal});
+    const d = await res.json().catch(() => ({}));
+    if (lang !== $("lang").value) return;
+    if (!res.ok || !d.text) throw new Error(d.error || "failed");
+    box.textContent = d.text;
+    for (const s of d.sources || []) {
+      const a = document.createElement("a"); a.href = s.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = UI[lang].src + ": " + s.title; box.appendChild(a);
+    }
+    box.style.display = "block"; btn.style.display = "none"; speak(d.text, UI[lang].voice);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = (err.name === "AbortError" ? UI[lang].timeout : UI[lang].err) + " " + UI[lang].retry;
+  } finally { clearTimeout(timer); }
+}
+
 function showError(isTimeout){
   $("errText").textContent = isTimeout ? u().timeout : u().err; $("err").style.display = "block";
 }
@@ -170,6 +197,10 @@ function render(data, secs){
   const voice = u().voice;
   $("play").onclick = () => speaking ? stop() : speak(r.narration, voice);
   $("playKo").onclick = () => speak(r.korean_text, "ko-KR", .8);
+  $("more").style.display = "none"; $("more").textContent = "";
+  $("moreBtn").style.display = r.korean_text ? "block" : "none"; $("moreBtn").disabled = false;
+  $("moreBtn").textContent = u().more;
+  $("moreBtn").onclick = () => tellMore(r);
 }
 
 // --- speech ---

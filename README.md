@@ -1,16 +1,46 @@
 # Nunchi · 찍으면 들리는 한국
 
-Point your phone at any Korean sign, menu or notice, tap the text, and hear — in your own language —
-what it says, **why it is there**, and **what you should do now**, plus a fun link to your native language
+Point your phone at a Korean sign, menu or notice, tap the text, and hear in your own language
+what it says, **why it is there**, and **what you should do now**, plus a link to your native language
 (e.g. 일방통행 = 一方通行 for Japanese travellers).
 
 Translation apps change the letters. Nunchi explains the place.
 
+**Demo video:** _coming soon_
+
+## Why
+A translation of 「휴지통 없는 화장실」 tells you "restroom without a trash can". It does not tell you that the
+paper goes in the toilet, or why. Travellers standing in front of a sign need the reason and the next action,
+in their own language, read aloud while their hands are busy.
+
 ## How it works
-1. **SAM 3.1** (point prompt) segments the exact sign you tapped.
-2. **Muse Spark 1.3** reads the full photo + the cropped sign and returns a strict-JSON explanation
-   (reading, meaning, why here, what to do, native-language bridge, 30-second narration).
-3. The browser speaks the narration (Web Speech API) and the original Korean.
+1. **Tap.** When a photo is uploaded, **SAM 3.1** finds sign candidates (concept prompt `sign`) and draws them.
+   A tap inside a candidate uses that box; otherwise SAM 3.1 segments the tapped point (point prompt).
+2. **Explain.** **Muse Spark 1.3** reads the full photo plus the tapped crop and returns strict JSON:
+   reading, meaning, why it is here, what to do, a native-language bridge, a 20–30 s narration and a confidence.
+3. **Listen.** The browser reads the narration aloud (Web Speech API) and can play the Korean original.
+   "Tell me more" asks Muse Spark again with **web search** for 2–3 grounded sentences and source links.
+
+```mermaid
+flowchart LR
+  phone["Phone camera<br/>(mobile web)"] -->|photo| seg["/api/segment"]
+  seg -->|concept: sign| sam["SAM 3.1"]
+  phone -->|photo + tap| exp["/api/explain"]
+  exp -->|point prompt, if tap is outside a candidate| sam
+  exp -->|full photo + crop| spark["Muse Spark 1.3<br/>strict JSON"]
+  phone -->|tell me more| more["/api/more"]
+  more -->|web_search| spark
+  exp --> card["Card + browser TTS<br/>(ja / en / zh)"]
+  exp <--> cache[("cache/<br/>demo replay")]
+```
+
+## Meta models used
+| Model | Used for |
+|---|---|
+| `sam-3.1` | sign candidates (concept prompt) and the tapped region (point prompt) |
+| `muse-spark-1.3` | strict-JSON explanation (`reasoning_effort=minimal`), and "Tell me more" via the Responses API with `web_search` |
+
+Muse Voice Transcribe is not used yet (see Limits). Meta's API has no text-to-speech, so speech uses the browser.
 
 ## Run
 ```bash
@@ -37,11 +67,15 @@ Open the printed URL in iPhone Safari. Narration uses the device voices (best on
 | `SEND_FULL` | `1` | send full photo + tapped crop (`0` = crop only) |
 | `HEDGE_S` / `REQUEST_TIMEOUT_S` | `9` / `20` | duplicate a slow Spark request after 9 s; give up after 20 s |
 | `APP_NAME` | `Nunchi` | app name shown in the UI |
+| `LIVE` | `1` | `0` = serve cached results only (safe public demo link) |
+| `RATE_PER_MIN` | `20` | live model calls per client IP per minute |
+| `BUDGET_USD` | `50` | stop live calls when estimated spend reaches this |
 
 ### Scripts
 - `scripts/latency_test.py` — compares effort / image size / crop-only settings.
 - `scripts/batch_test.py test-images ja en` — whole-photo explanation for every image → `report.html` for human review + keyword check against `scripts/expectations.json`.
-- `scripts/warm_cache.py` — fills `cache/` for every demo photo × preset tap × language through the real endpoints and checks `korean_text` against `scripts/expectations.json`.
+- `scripts/warm_cache.py` — fills `cache/` for every demo photo × preset tap × language (and its "Tell me more") through the real endpoints and checks `korean_text` against `scripts/expectations.json`.
+- `scripts/usage_report.py` — estimated Meta API spend from `usage/usage.jsonl`; live calls stop at `BUDGET_USD` (default 50).
 
 ## How a tap is resolved
 1. On upload, `/api/segment` asks SAM 3.1 for the concept `sign`; candidates are drawn faintly.
@@ -58,3 +92,12 @@ Open the printed URL in iPhone Safari. Narration uses the device voices (best on
 - SAM 3.1 concept prompts take one noun phrase per request: `sign` works, `sign, text` returns nothing.
 - Results are cached in `cache/` so the demo replays even if the network drops. Uploaded photos are never stored; logs keep only timing.
 - Test photos: openly licensed, see `test-images/sources.csv` for authors and licenses. Photo 12 is excluded (license unconfirmed).
+
+## Limits and next steps
+- Speech quality depends on the device's voices; iOS/macOS voices sound best.
+- Small or stylised text can be misread; when unsure the model says so (`confidence: low`).
+- Next: voice follow-up questions with `muse-voice-transcribe-1.0`, polished Chinese UI, offline caching as a PWA.
+
+## License
+Code: MIT (see `LICENSE`). Test photos: each under its own license, listed in `test-images/sources.csv`;
+CC BY-SA photos (04, 06, 11, 13, 16, 18) are shared under the same license.

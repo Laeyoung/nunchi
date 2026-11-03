@@ -19,6 +19,10 @@ _lock = threading.Lock()
 _total: float | None = None
 
 
+# Charged when a call fails or reports no usage: the API may still bill a request we gave up on.
+FAILED_CALL_USD = {"spark": 0.01, "more": 0.02, "sam": PRICES["sam-3.1"]["image"]}
+
+
 class BudgetExceeded(RuntimeError):
     pass
 
@@ -48,7 +52,14 @@ def record(model: str, usd: float, **detail):
             f.write(json.dumps({"ts": round(time.time()), "model": model, "usd": round(usd, 6), **detail}) + "\n")
 
 
+def record_failed(kind: str, model: str, error: Exception):
+    record(model, FAILED_CALL_USD[kind], failed=type(error).__name__, kind=kind)
+
+
 def record_spark(model: str, usage) -> float:
+    if usage is None:
+        record(model, FAILED_CALL_USD["spark"], missing_usage=True)
+        return FAILED_CALL_USD["spark"]
     p = PRICES.get(model, PRICES["muse-spark-1.3"])
     inp = getattr(usage, "prompt_tokens", 0) or 0
     out = getattr(usage, "completion_tokens", 0) or 0

@@ -58,14 +58,18 @@ def parse_boxes(text: str) -> list[dict]:
 def _sam(img: Image.Image, prompt_text: str) -> list[dict]:
     usage.check()
     t = time.time()
-    resp = client().with_options(timeout=cfg.SAM_TIMEOUT_S).responses.create(
-        model=cfg.SAM_MODEL,
-        input=[{"type": "message", "role": "user", "content": [
-            {"type": "input_text", "text": prompt_text},
-            {"type": "input_image", "image_url": to_data_url(img)},
-        ]}],
-        metadata={"include_confidence": "true", "mask_encoding": "one_bit"},
-    )
+    try:
+        resp = client().with_options(timeout=cfg.SAM_TIMEOUT_S).responses.create(
+            model=cfg.SAM_MODEL,
+            input=[{"type": "message", "role": "user", "content": [
+                {"type": "input_text", "text": prompt_text},
+                {"type": "input_image", "image_url": to_data_url(img)},
+            ]}],
+            metadata={"include_confidence": "true", "mask_encoding": "one_bit"},
+        )
+    except Exception as e:
+        usage.record_failed("sam", cfg.SAM_MODEL, e)
+        raise
     usage.record_sam()
     log.info("model=%s latency=%.2fs", cfg.SAM_MODEL, time.time() - t)
     return parse_boxes(resp.output_text)
@@ -121,13 +125,17 @@ def explain(img: Image.Image | None, region: Image.Image | None, lang: str,
             content.append({"type": "image_url", "image_url": {"url": to_data_url(im)}})
     usage.check()
     t = time.time()
-    resp = client().chat.completions.create(
-        model=cfg.SPARK_MODEL,
-        reasoning_effort=effort or cfg.SPARK_EFFORT,
-        messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}],
-        response_format={"type": "json_schema",
-                         "json_schema": {"name": "SignExplanation", "strict": True, "schema": EXPLAIN_SCHEMA}},
-    )
+    try:
+        resp = client().chat.completions.create(
+            model=cfg.SPARK_MODEL,
+            reasoning_effort=effort or cfg.SPARK_EFFORT,
+            messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}],
+            response_format={"type": "json_schema",
+                             "json_schema": {"name": "SignExplanation", "strict": True, "schema": EXPLAIN_SCHEMA}},
+        )
+    except Exception as e:
+        usage.record_failed("spark", cfg.SPARK_MODEL, e)
+        raise
     usd = usage.record_spark(cfg.SPARK_MODEL, resp.usage)
     log.info("model=%s effort=%s latency=%.2fs out_tokens=%s usd=%.4f total_usd=%.2f", cfg.SPARK_MODEL,
              effort or cfg.SPARK_EFFORT, time.time() - t, getattr(resp.usage, "completion_tokens", None), usd,
@@ -158,3 +166,48 @@ def explain_hedged(img, region, lang: str, effort: str | None = None) -> dict:
     if errors and not pending:
         raise errors[0]
     raise TimeoutError("Muse Spark request timed out")
+
+
+MORE_PROMPT = {
+    "ja": "Japanese", "en": "English", "zh": "Simplified Chinese", "ko": "Korean",
+}
+
+
+def more(korean_text: str, meaning: str, lang: str) -> dict:
+    """'Tell me more': Responses API + web_search. Returns {"text", "sources":[{"title","url"}]}."""
+    usage.check()
+    name = MORE_PROMPT.get(lang, "English")
+    prompt = (f"A foreign traveller in Korea is looking at a sign that says: {korean_text!r} (meaning: {meaning}).\n"
+              f"Search the web, then explain the background of this sign in {name} in 2-3 short sentences. "
+              f"Only state facts the search results support. Plain text, no markdown, no lists, no URLs in the text.")
+    t = time.time()
+    try:
+        resp = client().with_options(timeout=cfg.MORE_TIMEOUT_S).responses.create(
+            model=cfg.SPARK_MODEL, reasoning={"effort": "minimal"}, tools=[{"type": "web_search"}],
+            include=["web_search_call.results"], input=prompt)
+    except Exception as e:
+        usage.record_failed("more", cfg.SPARK_MODEL, e)
+        raise
+    texts, sources, searches = [], [], 0
+    for item in resp.output:
+        if item.type == "web_search_call":
+            searches += 1
+            for r in getattr(item, "results", None) or []:
+                r = r if isinstance(r, dict) else r.model_dump()  # SDK keeps unknown fields as dicts
+                url = r.get("url") or ""
+                host = url.split("/")[2] if url.count("/") >= 2 else url
+                if url.startswith("http") and all(host not in s["url"] for s in sources):
+                    sources.append({"title": r.get("title") or host, "url": url})
+        elif item.type == "message" and getattr(item, "phase", None) != "commentary":
+            texts = [c.text for c in item.content if getattr(c, "type", "") == "output_text"]  # keep the last answer
+    u = resp.usage
+    if u is None:
+        usage.record_failed("more", cfg.SPARK_MODEL, RuntimeError("missing usage"))
+        return {"text": " ".join(texts).strip(), "sources": sources[:2]}
+    p = usage.PRICES["muse-spark-1.3"]
+    cached = getattr(getattr(u, "input_tokens_details", None), "cached_tokens", 0) or 0
+    usd = (u.input_tokens - cached) * p["in"] + cached * p["cached_in"] + u.output_tokens * p["out"]
+    usage.record(cfg.SPARK_MODEL, usd, inp=u.input_tokens, cached=cached, out=u.output_tokens, kind="more")
+    usage.record_search(searches)
+    log.info("more lang=%s latency=%.2fs searches=%d", lang, time.time() - t, searches)
+    return {"text": " ".join(texts).strip(), "sources": sources[:2]}
