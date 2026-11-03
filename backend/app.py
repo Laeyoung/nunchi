@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config as cfg
 from . import meta_client as mc
-from .prompts import LANG_NAMES
+from .prompts import LANG_NAMES, PROMPT_VERSION
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -16,7 +16,14 @@ CACHE.mkdir(exist_ok=True)
 app = FastAPI(title=cfg.APP_NAME)
 _regions: "collections.OrderedDict[str, dict]" = collections.OrderedDict()  # (image, tap) -> box; LRU
 _REGIONS_MAX = 500
-_calls: dict[str, collections.deque] = collections.defaultdict(collections.deque)
+_calls: dict[str, collections.deque] = {}
+_CALLS_MAX = 10_000
+
+
+def _client_bucket(request: Request) -> str:
+    """Client IP; IPv6 grouped by /64. Behind a tunnel every request shares one bucket (a global cap)."""
+    ip = request.client.host if request.client else "?"
+    return ":".join(ip.split(":")[:4]) if ":" in ip else ip
 
 
 def _remember_region(key: str, box: dict):
@@ -30,8 +37,13 @@ def _gate(request: Request) -> JSONResponse | None:
     """Before any live model call: live mode on and per-IP rate limit not exceeded."""
     if not cfg.LIVE:
         return JSONResponse({"error": "offline"}, status_code=503)
-    ip = request.client.host if request.client else "?"
-    now, q = time.time(), _calls[ip]
+    now, bucket = time.time(), _client_bucket(request)
+    if len(_calls) > _CALLS_MAX:  # drop clients idle for over a minute
+        for k in [k for k, v in _calls.items() if not v or now - v[-1] > 60]:
+            del _calls[k]
+        if len(_calls) > _CALLS_MAX:
+            return JSONResponse({"error": "rate_limited"}, status_code=429)
+    q = _calls.setdefault(bucket, collections.deque())
     while q and now - q[0] > 60:
         q.popleft()
     if len(q) >= cfg.RATE_PER_MIN:
@@ -49,6 +61,9 @@ def _key(*parts) -> str:
 
 
 def _fail(e: Exception, where: str) -> JSONResponse:
+    if isinstance(e, mc.usage.BudgetExceeded):
+        log.warning("%s refused: %s", where, e)
+        return JSONResponse({"error": "offline"}, status_code=503)
     timeout = "timeout" in type(e).__name__.lower() or "timed out" in str(e).lower()
     log.warning("%s failed: %s: %s", where, type(e).__name__, str(e)[:200])
     return JSONResponse({"error": "timeout" if timeout else "upstream"}, status_code=504 if timeout else 502)
@@ -128,7 +143,7 @@ async def explain(request: Request, image: UploadFile = File(...), lang: str = F
     if nx is not None and ny is not None:
         nx, ny = round(nx, 3), round(ny, 3)
     tap_id = (nx, ny)
-    key = _key(digest, lang, tap_id, cfg.MAX_SIDE)
+    key = _key(digest, lang, tap_id, cfg.MAX_SIDE, cfg.SPARK_MODEL, PROMPT_VERSION)
     cached = CACHE / f"{key}.json"
     if cached.exists():  # demo safety net: replay when the network fails
         return json.loads(cached.read_text()) | {"cached": True}

@@ -3,7 +3,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from openai import OpenAI
 from PIL import Image, ImageOps
 
-from . import config as cfg
+from . import config as cfg, usage
 from .schema import EXPLAIN_SCHEMA
 from .prompts import SYSTEM, user_prompt
 
@@ -56,6 +56,7 @@ def parse_boxes(text: str) -> list[dict]:
 
 
 def _sam(img: Image.Image, prompt_text: str) -> list[dict]:
+    usage.check()
     t = time.time()
     resp = client().with_options(timeout=cfg.SAM_TIMEOUT_S).responses.create(
         model=cfg.SAM_MODEL,
@@ -65,6 +66,7 @@ def _sam(img: Image.Image, prompt_text: str) -> list[dict]:
         ]}],
         metadata={"include_confidence": "true", "mask_encoding": "one_bit"},
     )
+    usage.record_sam()
     log.info("model=%s latency=%.2fs", cfg.SAM_MODEL, time.time() - t)
     return parse_boxes(resp.output_text)
 
@@ -117,6 +119,7 @@ def explain(img: Image.Image | None, region: Image.Image | None, lang: str,
     for im in (img, region):
         if im is not None:
             content.append({"type": "image_url", "image_url": {"url": to_data_url(im)}})
+    usage.check()
     t = time.time()
     resp = client().chat.completions.create(
         model=cfg.SPARK_MODEL,
@@ -125,9 +128,10 @@ def explain(img: Image.Image | None, region: Image.Image | None, lang: str,
         response_format={"type": "json_schema",
                          "json_schema": {"name": "SignExplanation", "strict": True, "schema": EXPLAIN_SCHEMA}},
     )
-    usage = getattr(resp, "usage", None)
-    log.info("model=%s effort=%s latency=%.2fs out_tokens=%s", cfg.SPARK_MODEL, effort or cfg.SPARK_EFFORT,
-             time.time() - t, getattr(usage, "completion_tokens", None))
+    usd = usage.record_spark(cfg.SPARK_MODEL, resp.usage)
+    log.info("model=%s effort=%s latency=%.2fs out_tokens=%s usd=%.4f total_usd=%.2f", cfg.SPARK_MODEL,
+             effort or cfg.SPARK_EFFORT, time.time() - t, getattr(resp.usage, "completion_tokens", None), usd,
+             usage.total())
     return json.loads(resp.choices[0].message.content)
 
 

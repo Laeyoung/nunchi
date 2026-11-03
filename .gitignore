@@ -8,3 +8,4 @@ report.html
 test-images/12_*
 .playwright-mcp/
 test-images/contact_sheet.jpg
+usage/
