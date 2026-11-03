@@ -1,0 +1,21 @@
+filename,category,korean_text_in_image,source_page_url,author,license
+01_road_oneway.jpg,road sign: 일방통행,일방통행,https://commons.wikimedia.org/wiki/File:One-way_Traffic_Road_Sign_in_Ansan_20240719.jpg,LandAndTree,CC0
+02_road_slow.jpg,road sign: 서행,천천히 / SLOW,https://commons.wikimedia.org/wiki/File:Korean_Sign_-_Slow_1.jpg,P.Ctnt,Public domain
+03_road_no_parking.jpg,road sign: 주정차금지,주정차금지,https://commons.wikimedia.org/wiki/File:Korean_Sign_-_No_Parking_or_Stopping_1.jpg,P.Ctnt,Public domain
+04_road_school_zone.jpg,road sign: 어린이보호구역,어린이보호구역 / SCHOOL ZONE / 주정차금지 / 견인지역,https://commons.wikimedia.org/wiki/File:20150208%EC%96%B4%EB%A6%B0%EC%9D%B4%EB%B3%B4%ED%98%B8%EA%B5%AC%EC%97%AD_%EC%A3%BC%EC%A0%95%EC%B0%A8%EA%B8%88%EC%A7%80_%EA%B2%AC%EC%9D%B8%EC%A7%80%EC%97%AD_%EC%95%88%EB%82%B4%ED%91%9C%EC%A7%80(%EA%B3%BC%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90_%EC%95%9E).jpg,최광모,CC BY-SA 4.0
+05_road_silver_zone.jpg,road sign: 노인보호구역,노인보호 (small plate under pictogram) / 30,"https://commons.wikimedia.org/wiki/File:Silver_Zone_Sign_in_Yeonamyulgeum-ro,_Cheonan_City.jpg",LandAndTree,CC BY 4.0
+06_road_stop.jpg,road sign: 정지,정지 / STOP,https://commons.wikimedia.org/wiki/File:ROK_Traffic_sign_-_Stop.jpg,Jhcbs1019,CC BY-SA 4.0
+07_road_no_entry.jpg,road sign: 진입금지,진입금지,https://commons.wikimedia.org/wiki/File:Korean_Sign_-_Do_Not_Enter_1.jpg,P.Ctnt,Public domain
+08_safety_slippery.jpg,safety: 미끄럼 주의,미끄럼 주의,https://commons.wikimedia.org/wiki/File:Take_Care._Floor_Slippery_in_Korean_(15410333237).jpg,oatsy40,CC BY 2.0
+09_safety_cctv.jpg,safety: CCTV 녹화중,CCTV 녹화중 / 무장경찰관 근무중 / 소매치기 오토바이 날치기 ...,https://commons.wikimedia.org/wiki/File:CCTV_Warning_Sign.jpg,lamoix,CC BY 2.0
+10_safety_no_access.jpg,safety: 출입금지(무단접근 금지),경고 / 본 시설물은 군사보호시설물로서 무단접근 및 사진촬영을 금함 / 육군 제2258 부대장,https://commons.wikimedia.org/wiki/File:Imjin_gak_caution.jpg,MT13,Public domain
+11_subway_transfer.jpg,subway: 환승(갈아타는 곳),갈아타는 곳 / 이매 / 여주,https://commons.wikimedia.org/wiki/File:Pangyo_Station_Gyeonggang_Transfor.jpg,Vitzro2011,CC BY-SA 3.0
+12_subway_pregnant_seat.jpg,subway: 임산부 배려석,서울 지하철 임산부 배려석 / 내일의 주인공을 맞이하는 핑크카펫 (small text on pink panels; floor stickers upside-down),https://commons.wikimedia.org/wiki/File:Designated_seats_for_pregnant_women_of_Seoul_Metro_Line_1_in_2018.jpg,Garam,Attribution
+13_subway_door_emergency.jpg,subway: 비상시 문 여는 방법,비상시 문여는 방법 / 차량의 화재등 비상의 경우 승무원의 안내에 따라 ...,https://commons.wikimedia.org/wiki/File:Doorwarning-seoulsubway.jpg,Nesnad at English Wikipedia,CC BY-SA 3.0
+14_subway_screen_door_station.jpg,subway: 스크린도어 위 역명판,회기 / 외대앞 / 청량리(지하),https://commons.wikimedia.org/wiki/File:1%ED%98%B8%EC%84%A0%EC%97%AD_%EC%8A%A4%ED%81%AC%EB%A6%B0%EB%8F%84%EC%96%B4.JPG,박경수,Public domain
+15_food_menu.jpg,shop/food: 메뉴판,"어리버리 / 국밥 7,000 / 따로국밥 8,000 / 소주 4,000 / 맥주 4,000 / 공기밥 1,000 / 포장 / 원산지 표시",https://commons.wikimedia.org/wiki/File:Oribori_somorigukbap_(39908018523).jpg,"lazy fri13th from Tokyo, Japan",CC BY 2.0
+16_shop_holiday_notice.jpg,shop/food: 매장 안내문,다음의 휴일날 폐점합니다 / 새해(1월 1일) / 설날 당일 / 추석 당일,https://commons.wikimedia.org/wiki/File:Costco_Korea_(5452975020).jpg,"InSapphoWeTrust from Los Angeles, California, USA",CC BY-SA 2.0
+17_food_restaurant_24h.jpg,shop/food: 식당 간판(24시),24시 냉삼식당,https://huggingface.co/datasets/HumynLabs/Korean-Signs-Image-Dataset/blob/main/Kgen_Korean%20Signs_1005_3.JPEG,HumynLabs / KGen (crowd-sourced contributors),CC BY 4.0
+18_daily_recycling.jpg,daily life: 분리수거,유리병류 / 플라스틱류 / 캔류 / 종이류 / 해운대,"https://commons.wikimedia.org/wiki/File:Recycling_bins_at_Busan,_South_Korea.jpg",ProjectManhattan,CC BY-SA 3.0
+19_daily_toilet.jpg,daily life: 화장실 안내,휴지통 없는 화장실 / 사용한 휴지는 변기에 버려주세요,https://commons.wikimedia.org/wiki/File:Toilet_advice_sign.jpg,사랑,Public domain
+20_shop_no_kids_zone.jpg,shop/food: 식당 안내문(노키즈존),죄송합니다. 저희 매장은 13세 이하의 어린이 동반 입장이 불가합니다. ...,"https://commons.wikimedia.org/wiki/File:No_Kids_Zone_poster,_Korea.jpg",Choi Won-seok,Public domain

@@ -1,0 +1,25 @@
+{
+  "_note": "Demo mode (?demo=1): any tap on a photo snaps to the nearest preset tap so cached results always match. nx, ny are 0-1 on the photo. scripts/warm_cache.py fills cache/ for every (photo, tap, lang).",
+  "langs": ["ja", "en"],
+  "photos": [
+    {"file": "01_road_oneway.jpg", "taps": [[0.48, 0.36]]},
+    {"file": "15_food_menu.jpg", "taps": [[0.5, 0.55]]},
+    {"file": "19_daily_toilet.jpg", "taps": [[0.33, 0.45]]},
+    {"file": "02_road_slow.jpg", "taps": [[0.5, 0.4]]},
+    {"file": "03_road_no_parking.jpg", "taps": [[0.5, 0.55]]},
+    {"file": "04_road_school_zone.jpg", "taps": [[0.5, 0.4]]},
+    {"file": "05_road_silver_zone.jpg", "taps": [[0.3, 0.6]]},
+    {"file": "06_road_stop.jpg", "taps": [[0.5, 0.45]]},
+    {"file": "07_road_no_entry.jpg", "taps": [[0.45, 0.45]]},
+    {"file": "08_safety_slippery.jpg", "taps": [[0.5, 0.2]]},
+    {"file": "09_safety_cctv.jpg", "taps": [[0.75, 0.45]]},
+    {"file": "10_safety_no_access.jpg", "taps": [[0.5, 0.4]]},
+    {"file": "11_subway_transfer.jpg", "taps": [[0.5, 0.25]]},
+    {"file": "13_subway_door_emergency.jpg", "taps": [[0.5, 0.3]]},
+    {"file": "14_subway_screen_door_station.jpg", "taps": [[0.5, 0.3]]},
+    {"file": "16_shop_holiday_notice.jpg", "taps": [[0.5, 0.5]]},
+    {"file": "17_food_restaurant_24h.jpg", "taps": [[0.5, 0.3]]},
+    {"file": "18_daily_recycling.jpg", "taps": [[0.5, 0.6]]},
+    {"file": "20_shop_no_kids_zone.jpg", "taps": [[0.5, 0.4]]}
+  ]
+}

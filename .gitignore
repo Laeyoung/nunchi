@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+cache/
+report.html
+.DS_Store
+# license not confirmed — keep local only
+test-images/12_*
+.playwright-mcp/
+test-images/contact_sheet.jpg

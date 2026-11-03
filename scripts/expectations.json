@@ -1,0 +1,23 @@
+{
+  "_note": "Per photo: the Korean text the default demo tap should read. A result passes if korean_text contains ANY keyword (spaces ignored).",
+  "01_road_oneway": ["일방통행"],
+  "02_road_slow": ["천천히"],
+  "03_road_no_parking": ["주정차금지"],
+  "04_road_school_zone": ["어린이보호구역", "주정차금지", "견인지역"],
+  "05_road_silver_zone": ["노인보호"],
+  "06_road_stop": ["정지"],
+  "07_road_no_entry": ["진입금지"],
+  "08_safety_slippery": ["미끄럼"],
+  "09_safety_cctv": ["CCTV", "녹화", "무장경찰관"],
+  "10_safety_no_access": ["경고", "군사보호", "무단접근"],
+  "11_subway_transfer": ["갈아타는"],
+  "12_subway_pregnant_seat": ["임산부"],
+  "13_subway_door_emergency": ["비상시"],
+  "14_subway_screen_door_station": ["회기"],
+  "15_food_menu": ["국밥", "따로국밥", "소주", "맥주", "공기밥"],
+  "16_shop_holiday_notice": ["휴일", "새해", "설날", "추석"],
+  "17_food_restaurant_24h": ["냉삼"],
+  "18_daily_recycling": ["유리병", "플라스틱", "캔", "종이"],
+  "19_daily_toilet": ["휴지", "변기"],
+  "20_shop_no_kids_zone": ["13세", "어린이", "죄송합니다"]
+}
