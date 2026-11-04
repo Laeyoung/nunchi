@@ -1,0 +1,15 @@
+# Only what the cache-only demo needs is uploaded. Never upload secrets, the spend ledger or photo 12.
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+usage/
+cache/batch/
+report.html
+.DS_Store
+.playwright-mcp/
+test-images/12_*
+test-images/contact_sheet.jpg
+scripts/
+docs/

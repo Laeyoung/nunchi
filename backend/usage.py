@@ -14,7 +14,10 @@ PRIOR_SPEND_USD = float(os.environ.get("PRIOR_SPEND_USD", "3.0"))  # estimate of
 BUDGET_USD = float(os.environ.get("BUDGET_USD", "50"))
 
 LEDGER = cfg.ROOT / "usage" / "usage.jsonl"
-LEDGER.parent.mkdir(exist_ok=True)
+try:
+    LEDGER.parent.mkdir(exist_ok=True)
+except OSError:  # read-only filesystem (cache-only hosting); record() is never reached with LIVE=0
+    pass
 _lock = threading.Lock()
 _total: float | None = None
 

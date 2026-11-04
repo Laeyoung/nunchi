@@ -76,13 +76,13 @@
 const UI = {
   ja:{take:"📷 写真を撮る", hint:"知りたい文字をタップしてください", meaning:"意味", why:"なぜここに？", todo:"どうすればいい？",
       play:"▶︎ 聞く", stop:"■ 止める", more:"🔎 もっと詳しく", moreWait:"調べています…", src:"出典", low:"自信が低い結果です", thinking:"読んでいます…",
-      err:"うまく読み取れませんでした。", timeout:"時間がかかりすぎています。", retry:"もう一度", voice:"ja-JP"},
+      err:"うまく読み取れませんでした。", offline:"公開デモでは、サンプル写真の解説だけを再生しています。下の写真を選んでください。", timeout:"時間がかかりすぎています。", retry:"もう一度", voice:"ja-JP"},
   en:{take:"📷 Take a photo", hint:"Tap the Korean text you want to understand", meaning:"Meaning", why:"Why is it here?", todo:"What should I do?",
       play:"▶︎ Listen", stop:"■ Stop", more:"🔎 Tell me more", moreWait:"Looking it up…", src:"Source", low:"Low-confidence answer", thinking:"Reading the sign…",
-      err:"Something went wrong.", timeout:"This is taking too long.", retry:"Try again", voice:"en-US"},
+      err:"Something went wrong.", offline:"This public demo replays the sample photos only. Pick one below.", timeout:"This is taking too long.", retry:"Try again", voice:"en-US"},
   zh:{take:"📷 拍照", hint:"点击你想了解的韩文", meaning:"意思", why:"为什么在这里？", todo:"我该怎么做？",
       play:"▶︎ 收听", stop:"■ 停止", more:"🔎 了解更多", moreWait:"正在查找…", src:"来源", low:"置信度较低", thinking:"正在识别…",
-      err:"出了点问题。", timeout:"等待时间过长。", retry:"重试", voice:"zh-CN"},
+      err:"出了点问题。", offline:"公开演示只播放示例照片的结果，请选择下方的照片。", timeout:"等待时间过长。", retry:"重试", voice:"zh-CN"},
 };
 // Preferred voices per language, best first (iOS / macOS / Chrome names).
 const VOICE_PREF = {
@@ -98,6 +98,8 @@ const u = () => UI[$("lang").value];
 fetch("/api/config").then(r => r.json()).then(c => {
   const nm = c.name_ko ? c.name + " " + c.name_ko : c.name;
   $("appName").textContent = nm; $("tagline").textContent = c.tagline; document.title = nm + " · " + c.tagline;
+  // Public cache-only deployment: live analysis is off, so open the sample photos instead of the camera.
+  if (c.live === false && !DEMO) { params.set("demo", "1"); location.replace("?" + params.toString()); }
 }).catch(() => {});
 
 function t(){
@@ -150,11 +152,11 @@ async function explain(nx, ny){
     const res = await fetch("/api/explain", {method:"POST", body:fd, signal:ctl.signal});
     const data = await res.json().catch(() => ({}));
     if (!last || last.nx !== nx || last.ny !== ny || lang !== $("lang").value) return;  // superseded
-    if (!res.ok || !data.result) return showError(data.error === "timeout");
+    if (!res.ok || !data.result) return showError(data.error === "timeout" ? "timeout" : data.error === "offline" ? "offline" : "err");
     render(data, ((performance.now() - started) / 1000).toFixed(1));
     speak(data.result.narration, UI[lang].voice);
   } catch (err) {
-    showError(err.name === "AbortError");
+    showError(err.name === "AbortError" ? "timeout" : "err");
   } finally { clearTimeout(timer); $("spin").style.display = "none"; }
 }
 // "Tell me more": web-search-grounded background, only on request (keeps the main flow fast and cheap).
@@ -175,12 +177,14 @@ async function tellMore(r){
     }
     box.style.display = "block"; btn.style.display = "none"; speak(d.text, UI[lang].voice);
   } catch (err) {
-    btn.disabled = false; btn.textContent = (err.name === "AbortError" ? UI[lang].timeout : UI[lang].err) + " " + UI[lang].retry;
+    btn.disabled = false; btn.textContent = err.name === "AbortError" ? UI[lang].timeout + " " + UI[lang].retry
+      : err.message === "offline" ? UI[lang].offline : UI[lang].err + " " + UI[lang].retry;
   } finally { clearTimeout(timer); }
 }
 
-function showError(isTimeout){
-  $("errText").textContent = isTimeout ? u().timeout : u().err; $("err").style.display = "block";
+function showError(kind){
+  $("errText").textContent = u()[kind] || u().err; $("err").style.display = "block";
+  $("retry").style.display = kind === "offline" ? "none" : "";
 }
 $("retry").onclick = () => last && explain(last.nx, last.ny);
 

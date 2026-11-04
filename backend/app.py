@@ -12,7 +12,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("nunchi")
 
 CACHE = cfg.ROOT / "cache"
-CACHE.mkdir(exist_ok=True)
+try:
+    CACHE.mkdir(exist_ok=True)
+except OSError:  # read-only filesystem (cache-only hosting)
+    pass
 app = FastAPI(title=cfg.APP_NAME)
 _regions: "collections.OrderedDict[str, dict]" = collections.OrderedDict()  # (image, tap) -> box; LRU
 _REGIONS_MAX = 500
@@ -71,7 +74,7 @@ def _fail(e: Exception, where: str) -> JSONResponse:
 
 @app.get("/api/config")
 def config():
-    return {"name": cfg.APP_NAME, "name_ko": cfg.APP_NAME_KO, "tagline": cfg.APP_TAGLINE}
+    return {"name": cfg.APP_NAME, "name_ko": cfg.APP_NAME_KO, "tagline": cfg.APP_TAGLINE, "live": cfg.LIVE}
 
 
 def _seg_path(digest: str):

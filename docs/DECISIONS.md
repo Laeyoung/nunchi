@@ -14,6 +14,7 @@ MVP를 만드는 동안 내린 결정과 그 근거를 적습니다. 새 결정�
 
 | # | 날짜 | 결정 | 이유 | 검토한 대안 |
 | --- | --- | --- | --- | --- |
+| 25 | 11-04 | 심사용 공개 데모는 Vercel 개인 계정(laeyoungs-projects)에 캐시 전용으로 올린다. API 키를 넣지 않고 진입 파일에서 `LIVE=0`을 강제한다 | 심사 기간 동안 Mac 없이 접속 가능. 크레딧 사용 0. 처음에 다른 팀(laeyoung-comcom)에 올렸다가 의뢰인 요청으로 삭제 | cloudflared 임시 주소 |
 | 24 | 11-04 | 데모 영상은 실제 앱을 자동으로 조작해 녹화한다(Playwright Chromium + CDP 화면 캡처). 내레이션은 macOS 음성 Daniel, 앱 낭독은 실제 앱과 같은 Kyoko·Samantha. 캐시만 사용 | 녹화를 의뢰인 대신 해야 함. 같은 결과를 다시 만들 수 있음(`scripts/demo_video/build.sh`). 크레딧 0 | 화면 녹화 앱으로 수동 녹화 |
 | 23 | 11-04 | GitHub 저장소는 private으로 먼저 만들고, 제출 직전에 public으로 바꾼다 | 의뢰인 결정. 규정상 제출 시 public이어야 함 | 처음부터 public |
 | 22 | 11-04 | iPhone 실기기 대신 Playwright WebKit + iPhone 13 에뮬레이션으로 확인한다 | 의뢰인에게 iPhone이 없음. Xcode(iOS 시뮬레이터)가 설치돼 있지 않음. WebKit은 Safari와 같은 엔진이라 레이아웃·JS·음성 API 차이를 잡을 수 있음 | Xcode 설치 후 iOS 시뮬레이터(수십 GB), 유료 원격 기기 서비스 |

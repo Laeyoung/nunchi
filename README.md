@@ -10,6 +10,7 @@ Translation apps change the letters. Nunchi explains the place.
 
 It is a mobile web app (PWA): open the URL in the phone browser, no install needed.
 
+**Live demo:** https://nunchi-three.vercel.app (cache-only: replays the sample photos, no model calls)  
 **Demo video:** _coming soon_
 
 ## Built during the hackathon
@@ -71,6 +72,11 @@ cp .env.example .env                 # put your dev.meta.ai key in MODEL_API_KEY
 cloudflared tunnel --url http://localhost:8000     # prints https://<random>.trycloudflare.com
 ```
 Open the printed URL in iPhone Safari. Narration uses the device voices (best on iOS/macOS: Kyoko / O-ren for Japanese, Samantha for English, Yuna for Korean).
+
+### Public demo on Vercel
+`api/index.py` is the Vercel entry point. It forces `LIVE=0`, and no API key is configured on Vercel, so the hosted
+demo only replays `cache/` for the sample photos and can never spend credits. `.vercelignore` keeps `.env*`, the spend
+ledger and photo 12 out of the upload. Deploy with `vercel deploy --prod` after filling the cache locally.
 
 ### Tuning (env vars)
 | var | default | meaning |
