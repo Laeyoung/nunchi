@@ -12,6 +12,8 @@ for f in os.listdir(f"{V}/audio"):
         DUR[f[:-5]] = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                                                      "-of", "csv=p=0", f"{V}/audio/{f}"]))
 IF_X, IF_Y, SC = 208, 52, 1.169
+APP = os.environ.get("APP", "http://localhost:8000")  # the own-photo scene needs a LIVE=1 server
+PHONE_TAP = (0.5, 0.2)  # the "미끄럼 주의" headline
 cues, frames = [], []
 
 
@@ -20,9 +22,9 @@ async def main():
         b = await p.chromium.launch()
         page = await b.new_page(viewport={"width": 1920, "height": 1080})
         await page.goto("http://localhost:8765/stage.html")
-        await page.evaluate("document.getElementById('app').src='http://localhost:8000/?demo=1&lang=ja'")
+        await page.evaluate("document.getElementById('app').src='" + APP + "/?demo=1&lang=ja'")
         await page.wait_for_timeout(1500)
-        fr = next(f for f in page.frames if "8000" in f.url)
+        fr = next(f for f in page.frames if f.url.startswith(APP))
         await fr.wait_for_function("document.querySelectorAll('#grid img').length > 15 && [...document.querySelectorAll('#grid img')].every(i => i.complete)")
         imgs = ",".join(f"'{n}'" for n in ["01_road_oneway","04_road_school_zone","06_road_stop","08_safety_slippery","09_safety_cctv",
             "11_subway_transfer","13_subway_door_emergency","15_food_menu","16_shop_holiday_notice","17_food_restaurant_24h",
@@ -133,7 +135,7 @@ async def main():
         end = await narrate("n7")
         await scroll_to("#moreBtn", 420); await sleep(1.0); await tap_el("#moreBtn")
         await fr.wait_for_selector("#more a", timeout=15000); await sleep(0.4); await scroll_to("#more", 330)
-        await until(end); await sleep(3.0)
+        await until(end); await sleep(2.0)
 
         # 6. English
         await js("() => scene({step: 'Same tap, English', title: 'The bridge adapts', note: 'For English there is no shared vocabulary, so the bridge becomes one accurate Hangul reading tip — never a made-up etymology.', on: ['tap', 'explain', 'listen']})")
@@ -143,6 +145,21 @@ async def main():
         await fr.wait_for_selector("#card", state="visible"); await sleep(1.0); await scroll_to("#card")
         await until(end); await sleep(0.3)
         await app_voice("a19en", 12.0, "Nunchi reads aloud · en-US voice", DATA["19_en"]["narration"])
+
+        # 6b. Own photo: library upload, resized in the browser, analysed live
+        await js("() => scene({step: 'Your own photo', title: 'Camera or library, live', note: 'A 4032×3024 phone photo is resized in the browser (1600 px, EXIF upright). Then <b>SAM 3.1</b> and <b>Muse Spark 1.3</b> run live on it. Try it: <b>nunchi-three.vercel.app</b>', on: ['tap', 'explain', 'listen']})")
+        end = await narrate("n8b")
+        await fr.evaluate("() => { document.getElementById('pickRow').style.display = 'flex'; window.scrollTo({top: 0, behavior: 'smooth'}); }")
+        await sleep(1.2)
+        await fr.evaluate("() => document.getElementById('albumBtn').style.outline = '4px solid #e5484d'")
+        r = await fr.evaluate("() => { const b = document.getElementById('albumBtn').getBoundingClientRect(); return [b.x + b.width/2, b.y + b.height/2]; }")
+        await js("([x, y]) => ripple(x, y)", [IF_X + r[0] * SC, IF_Y + r[1] * SC]); await sleep(0.8)
+        await fr.evaluate("() => document.getElementById('albumBtn').style.outline = ''")
+        await fr.set_input_files("#file2", f"{V}/phone_photo.jpg")
+        await fr.wait_for_function("document.querySelectorAll('.cand').length > 0", timeout=30000)
+        await sleep(0.8); await scroll_to("#stage", 150); await sleep(1.0)
+        await tap_photo(*PHONE_TAP); await fr.wait_for_selector("#card", state="visible", timeout=40000)
+        await sleep(0.5); await scroll_to("#card"); await until(end); await sleep(2.5)
 
         # 7. Architecture
         await js("""() => slide(`<div style="position:absolute;left:120px;top:90px"><div style="font-size:30px;color:#e5484d;font-weight:700;letter-spacing:.06em">HOW IT WORKS</div>
@@ -168,9 +185,9 @@ async def main():
           <div class=tag>Read the room, in Korea.</div>
           <div class=mid style="font-size:32px">Built during the hackathon: the whole app — tap-to-region pipeline, prompts and schema, native-language bridge, Tell me more, demo cache, spend guard.<br>
           Next: voice questions with Muse Voice Transcribe · more languages.</div>
-          <div class=by>github.com/Laeyoung/nunchi</div></div>
+          <div class=by>Try it: nunchi-three.vercel.app · github.com/Laeyoung/nunchi</div></div>
           <div class=credits>Photos (Wikimedia Commons / Hugging Face, used under their licenses): {CREDITS}</div>`)""")
-        await until(await narrate("n10")); await sleep(3.0)
+        await until(await narrate("n10")); await sleep(2.5)
 
         t_end = time.time()
         await cdp.send("Page.stopScreencast"); await sleep(0.5)

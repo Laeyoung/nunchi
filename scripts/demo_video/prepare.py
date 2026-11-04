@@ -7,6 +7,12 @@ for f, lang, x, y in [("01_road_oneway.jpg", "ja", .48, .36), ("15_food_menu.jpg
     r = httpx.post("http://localhost:8000/api/explain", files={"image": open(f"{ROOT}/test-images/{f}", "rb")},
                    data={"lang": lang, "nx": x, "ny": y}, timeout=40)
     r.raise_for_status(); json.dump(r.json(), open(f"{OUT}/data/{f[:2]}_{lang}.json", "w"), ensure_ascii=False)
+# A phone-sized library photo for the own-photo scene: 4032x3024, stored sideways with EXIF orientation 6,
+# so the in-browser resize (EXIF upright, 1600 px) does real work and the request misses the sample cache.
+from PIL import Image
+im = Image.open(f"{ROOT}/test-images/08_safety_slippery.jpg").convert("RGB").resize((4032, 3024), Image.LANCZOS)
+exif = Image.Exif(); exif[0x0112] = 6
+im.rotate(90, expand=True).save(f"{OUT}/phone_photo.jpg", quality=92, exif=exif.tobytes())
 rows = [r for r in csv.DictReader(open(f"{ROOT}/test-images/sources.csv")) if not r["filename"].startswith("12")]
 open(f"{OUT}/credits.txt", "w").write(" · ".join(f'{r["filename"][:2]} {r["author"].splitlines()[0]} ({r["license"] or "see sources.csv"})' for r in rows))
 for k, t in json.load(open(f"{HERE}/lines.json")).items():

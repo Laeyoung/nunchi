@@ -7,6 +7,7 @@
 "n6": "This restroom sign is where a plain translation falls short. Nunchi says what to do, and why there is no trash can.",
 "n7": "Tell me more asks Muse Spark again, this time with web search, and shows where the answer came from.",
 "n8": "Switch to English, and the same tap gives a new card. With no shared vocabulary, the bridge becomes a reading tip instead.",
+"n8b": "It works on your own photos, too. Take one with the camera, or pick one from your library. The phone shrinks it before upload, then SAM and Muse Spark run live. You can try it right now, at nunchi-three dot vercel dot app.",
 "n9": "Under the hood: a single-page web app and a small FastAPI server. SAM 3.1 finds candidates with a concept prompt, and the tapped region with a point prompt. Muse Spark returns strict JSON with minimal reasoning effort, so a new card takes about eight to nine seconds. Results are cached, so the demo replays even offline.",
 "n10": "Everything you saw was built during this hackathon. Next up: voice questions with Muse Voice Transcribe, and more languages. Nunchi. Read the room, in Korea."
 }
