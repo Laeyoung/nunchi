@@ -13,10 +13,10 @@ PRICES = {  # USD
 PRIOR_SPEND_USD = float(os.environ.get("PRIOR_SPEND_USD", "3.0"))  # estimate of spend before the ledger existed
 BUDGET_USD = float(os.environ.get("BUDGET_USD", "50"))
 
-LEDGER = cfg.ROOT / "usage" / "usage.jsonl"
+LEDGER = cfg.WRITE_DIR / "usage" / "usage.jsonl"  # on Vercel this is per instance and temporary
 try:
-    LEDGER.parent.mkdir(exist_ok=True)
-except OSError:  # read-only filesystem (cache-only hosting); record() is never reached with LIVE=0
+    LEDGER.parent.mkdir(parents=True, exist_ok=True)
+except OSError:
     pass
 _lock = threading.Lock()
 _total: float | None = None
@@ -51,8 +51,11 @@ def record(model: str, usd: float, **detail):
     with _lock:
         total()
         _total += usd
-        with LEDGER.open("a") as f:
-            f.write(json.dumps({"ts": round(time.time()), "model": model, "usd": round(usd, 6), **detail}) + "\n")
+        try:
+            with LEDGER.open("a") as f:
+                f.write(json.dumps({"ts": round(time.time()), "model": model, "usd": round(usd, 6), **detail}) + "\n")
+        except OSError:  # unwritable: the in-memory total still guards this process
+            pass
 
 
 def record_failed(kind: str, model: str, error: Exception):

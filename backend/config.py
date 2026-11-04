@@ -32,4 +32,6 @@ FALLBACK_CROP = 0.35   # fallback crop side = 35% of the image's short side
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 MAX_PIXELS = 40_000_000            # reject decompression bombs before decoding
 RATE_PER_MIN = int(os.environ.get("RATE_PER_MIN", "20"))   # live model calls per client IP per minute
+WRITE_DIR = pathlib.Path(os.environ.get("WRITE_DIR") or ROOT)  # cache + spend ledger; /tmp/nunchi on Vercel
+TRUST_PROXY = os.environ.get("TRUST_PROXY", "0") == "1"  # take the client IP from x-real-ip (Vercel)
 LIVE = os.environ.get("LIVE", "1") == "1"  # 0 = serve cached results only (public demo link)

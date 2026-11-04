@@ -10,7 +10,7 @@ Translation apps change the letters. Nunchi explains the place.
 
 It is a mobile web app (PWA): open the URL in the phone browser, no install needed.
 
-**Live demo:** https://nunchi-three.vercel.app (cache-only: replays the sample photos, no model calls)  
+**Live demo:** https://nunchi-three.vercel.app (take a photo or pick one from your library; sample photos replay from cache)  
 **Demo video (2:41):** https://youtu.be/nPWfB1cW7Lg
 
 ## Built during the hackathon
@@ -74,9 +74,17 @@ cloudflared tunnel --url http://localhost:8000     # prints https://<random>.try
 Open the printed URL in iPhone Safari. Narration uses the device voices (best on iOS/macOS: Kyoko / O-ren for Japanese, Samantha for English, Yuna for Korean).
 
 ### Public demo on Vercel
-`api/index.py` is the Vercel entry point. It forces `LIVE=0`, and no API key is configured on Vercel, so the hosted
-demo only replays `cache/` for the sample photos and can never spend credits. `.vercelignore` keeps `.env*`, the spend
-ledger and photo 12 out of the upload. Deploy with `vercel deploy --prod` after filling the cache locally.
+`api/index.py` is the Vercel entry point. Live analysis (your own photo or the camera) runs only when the Vercel
+project sets both `MODEL_API_KEY` and `LIVE=1`; without them the deployment replays the bundled `cache/` for the
+sample photos only and can never spend credits. Vercel's filesystem is read-only, so new results and the spend
+ledger go to `/tmp/nunchi` (per instance, temporary: the `BUDGET_USD` guard is per instance there, so also set a
+spend limit in the Meta billing page). `.vercelignore` keeps `.env*`, the local ledger and photo 12 out of the upload.
+
+```bash
+vercel env add MODEL_API_KEY production --sensitive   # paste the key
+vercel env add LIVE production                          # 1
+vercel deploy --prod
+```
 
 ### Tuning (env vars)
 | var | default | meaning |

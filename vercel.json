@@ -1,7 +1,23 @@
 {
   "builds": [
-    { "src": "api/index.py", "use": "@vercel/python",
-      "config": { "includeFiles": ["backend/**", "frontend/**", "cache/*.json", "test-images/**"] } }
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": [
+          "backend/**",
+          "frontend/**",
+          "cache/*.json",
+          "test-images/**"
+        ],
+        "maxDuration": 60
+      }
+    }
   ],
-  "routes": [{ "src": "/(.*)", "dest": "api/index.py" }]
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
 }

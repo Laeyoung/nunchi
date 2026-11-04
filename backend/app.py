@@ -11,11 +11,26 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("nunchi")
 
-CACHE = cfg.ROOT / "cache"
+CACHE = cfg.ROOT / "cache"              # bundled results (demo photos); read-only on Vercel
+WCACHE = cfg.WRITE_DIR / "cache"         # where new results go (same folder locally, /tmp on Vercel)
 try:
-    CACHE.mkdir(exist_ok=True)
-except OSError:  # read-only filesystem (cache-only hosting)
+    WCACHE.mkdir(parents=True, exist_ok=True)
+except OSError:  # read-only filesystem: serve the bundled cache only
     pass
+
+
+def _cache_get(name: str) -> dict | None:
+    for d in (WCACHE, CACHE):
+        if (p := d / name).exists():
+            return json.loads(p.read_text())
+    return None
+
+
+def _cache_put(name: str, obj: dict):
+    try:
+        (WCACHE / name).write_text(json.dumps(obj, ensure_ascii=False))
+    except OSError as e:  # never fail a paid call because the result could not be cached
+        log.warning("cache write failed: %s", e)
 app = FastAPI(title=cfg.APP_NAME)
 _regions: "collections.OrderedDict[str, dict]" = collections.OrderedDict()  # (image, tap) -> box; LRU
 _REGIONS_MAX = 500
@@ -24,8 +39,9 @@ _CALLS_MAX = 10_000
 
 
 def _client_bucket(request: Request) -> str:
-    """Client IP; IPv6 grouped by /64. Behind a tunnel every request shares one bucket (a global cap)."""
-    ip = request.client.host if request.client else "?"
+    """Client IP; IPv6 grouped by /64. Behind a tunnel every request shares one bucket (a global cap).
+    TRUST_PROXY=1 (Vercel) uses x-real-ip, which the platform sets to the caller's address."""
+    ip = (request.headers.get("x-real-ip") if cfg.TRUST_PROXY else None) or (request.client.host if request.client else "?")
     return ":".join(ip.split(":")[:4]) if ":" in ip else ip
 
 
@@ -77,17 +93,17 @@ def config():
     return {"name": cfg.APP_NAME, "name_ko": cfg.APP_NAME_KO, "tagline": cfg.APP_TAGLINE, "live": cfg.LIVE}
 
 
-def _seg_path(digest: str):
-    return CACHE / f"seg_{_key(digest, cfg.MAX_SIDE)}.json"
+def _seg_name(digest: str) -> str:
+    return f"seg_{_key(digest, cfg.MAX_SIDE)}.json"
 
 
 def _segment_box(digest: str, img, nx: float, ny: float) -> dict | None:
     """Smallest highlighted candidate box that contains the tap (if /api/segment already ran)."""
-    p = _seg_path(digest)
-    if not p.exists():
+    seg = _cache_get(_seg_name(digest))
+    if not seg:
         return None
     x, y = nx * img.width, ny * img.height
-    hits = [b for b in json.loads(p.read_text())["boxes"]
+    hits = [b for b in seg["boxes"]
             if b["x1"] <= x <= b["x2"] and b["y1"] <= y <= b["y2"]]
     return min(hits, key=lambda b: (b["x2"] - b["x1"]) * (b["y2"] - b["y1"])) if hits else None
 
@@ -111,9 +127,9 @@ def demo_image(name: str):
 @app.post("/api/segment")
 async def segment(request: Request, image: UploadFile = File(...)):
     raw = await image.read(cfg.MAX_UPLOAD_BYTES + 1)
-    cached = _seg_path(hashlib.sha256(raw).hexdigest())
-    if cached.exists():
-        return json.loads(cached.read_text())
+    name = _seg_name(hashlib.sha256(raw).hexdigest())
+    if (hit := _cache_get(name)):
+        return hit
     if (blocked := _gate(request)):
         return blocked
     try:
@@ -127,7 +143,7 @@ async def segment(request: Request, image: UploadFile = File(...)):
         return _fail(e, "segment")
     out = {"width": img.width, "height": img.height, "boxes": boxes}
     log.info("segment boxes=%d sam_s=%.2f", len(boxes), time.time() - t)
-    cached.write_text(json.dumps(out))
+    _cache_put(name, out)
     return out
 
 
@@ -147,9 +163,8 @@ async def explain(request: Request, image: UploadFile = File(...), lang: str = F
         nx, ny = round(nx, 3), round(ny, 3)
     tap_id = (nx, ny)
     key = _key(digest, lang, tap_id, cfg.MAX_SIDE, cfg.SPARK_MODEL, PROMPT_VERSION)
-    cached = CACHE / f"{key}.json"
-    if cached.exists():  # demo safety net: replay when the network fails
-        return json.loads(cached.read_text()) | {"cached": True}
+    if (hit := _cache_get(f"{key}.json")):  # demo safety net: replay when the network fails
+        return hit | {"cached": True}
 
     if (blocked := _gate(request)):
         return blocked
@@ -193,7 +208,7 @@ async def explain(request: Request, image: UploadFile = File(...), lang: str = F
     log.info("explain lang=%s region=%s %s", lang, sam_source, timing)
     out = {"box": region_box, "region_source": sam_source, "image_size": [img.width, img.height],
            "result": result, "timing": timing}
-    cached.write_text(json.dumps(out, ensure_ascii=False))
+    _cache_put(f"{key}.json", out)
     return out
 
 
@@ -202,9 +217,9 @@ async def more(request: Request, korean_text: str = Form(...), meaning: str = Fo
     """Details button: web-search-grounded background + 1-2 source links. Never called in the default flow."""
     if lang not in LANG_NAMES or not (0 < len(korean_text) <= 300) or len(meaning) > 500:
         return _bad("bad input")
-    cached = CACHE / f"more_{_key(korean_text, meaning, lang, cfg.SPARK_MODEL)}.json"
-    if cached.exists():
-        return json.loads(cached.read_text()) | {"cached": True}
+    name = f"more_{_key(korean_text, meaning, lang, cfg.SPARK_MODEL)}.json"
+    if (hit := _cache_get(name)):
+        return hit | {"cached": True}
     if (blocked := _gate(request)):
         return blocked
     try:
@@ -212,7 +227,7 @@ async def more(request: Request, korean_text: str = Form(...), meaning: str = Fo
     except Exception as e:
         return _fail(e, "more")
     if out["text"]:
-        cached.write_text(json.dumps(out, ensure_ascii=False))
+        _cache_put(name, out)
     return out
 
 
