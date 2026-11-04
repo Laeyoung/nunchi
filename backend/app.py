@@ -231,4 +231,14 @@ async def more(request: Request, korean_text: str = Form(...), meaning: str = Fo
     return out
 
 
+@app.middleware("http")
+async def _revalidate_pages(request: Request, call_next):
+    """Pages and the manifest must be revalidated, or phones keep showing an old UI after a deploy."""
+    resp = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith((".html", ".webmanifest")):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 app.mount("/", StaticFiles(directory=cfg.ROOT / "frontend", html=True), name="frontend")

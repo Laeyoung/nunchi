@@ -14,8 +14,10 @@
   :root { --ink:#1b1b1f; --accent:#e5484d; --soft:#f4f1ec; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,"Hiragino Sans","Apple SD Gothic Neo",sans-serif; color:var(--ink); background:var(--soft); }
-  header { padding:16px 20px 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  h1 { font-size:22px; margin:0; } h1 small { font-weight:400; opacity:.6; font-size:13px; margin-left:6px; }
+  header { padding:16px 16px 8px; max-width:640px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  h1 { font-size:22px; margin:0; display:flex; flex-direction:column; line-height:1.15; min-width:0; }
+  h1 small { font-weight:400; opacity:.6; font-size:13px; margin-top:3px; word-break:keep-all; }
+  #lang { background:#fff; flex-shrink:0; min-height:44px; }
   select, button, label.btn { font:inherit; border-radius:12px; border:0; padding:10px 14px; }
   main { padding:0 16px 40px; max-width:640px; margin:0 auto; }
   label.btn { display:block; text-align:center; background:var(--ink); color:#fff; font-weight:600; margin:8px 0 14px; cursor:pointer; }
@@ -25,15 +27,21 @@
   .box { position:absolute; border:3px solid var(--accent); border-radius:6px; box-shadow:0 0 0 2000px rgba(0,0,0,.25); pointer-events:none; }
   .dot { position:absolute; width:18px; height:18px; margin:-9px; border-radius:50%; background:var(--accent); border:3px solid #fff; pointer-events:none; }
   #hint { text-align:center; opacity:.7; margin:10px 0; }
-  .pick { display:flex; gap:8px; margin:8px 0 10px; } .pick label.btn { flex:1; margin:0; }
+  .pick { display:flex; gap:8px; margin:8px 0 10px; }
+  .pick label.btn { flex:1; margin:0; min-width:0; min-height:48px; padding:12px 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    display:flex; align-items:center; justify-content:center; }
+  .ic { margin-right:8px; flex-shrink:0; }
   label.btn.alt { background:#fff; color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink); }
-  #samples { margin:0 0 12px; } #samples summary { cursor:pointer; opacity:.75; padding:6px 2px; font-size:15px; }
+  #samples { margin:0 0 12px; } #samples summary { cursor:pointer; opacity:.75; padding:0 2px; min-height:44px; display:flex; align-items:center; gap:6px; font-size:15px; }
+  #samples summary::before { content:"▸"; transition:transform .15s; } #samples[open] summary::before { transform:rotate(90deg); }
+  #samples summary::-webkit-details-marker { display:none; } #samples summary { list-style:none; }
   #notice { font-size:13px; opacity:.7; margin:4px 2px 8px; display:none; }
   #grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:6px 0 4px; }
   body.demo #grid { grid-template-columns:repeat(3,1fr); }
   #grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; cursor:pointer; }
   .card { background:#fff; border-radius:16px; padding:18px; margin-top:14px; box-shadow:0 2px 12px rgba(0,0,0,.06); display:none; }
-  .ko { font-size:30px; font-weight:800; } .rom { opacity:.6; margin-bottom:10px; }
+  .ko { font-size:30px; font-weight:800; line-height:1.2; word-break:keep-all; overflow-wrap:anywhere; } .ko.long { font-size:20px; } .ko.xlong { font-size:17px; font-weight:700; } .rom { opacity:.6; margin-bottom:10px; }
+  .rom.clamp { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; cursor:pointer; }
   .row { margin:10px 0; } .row b { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.04em; opacity:.55; }
   .bridge { background:#fff6e5; border-radius:12px; padding:10px 12px; }
   .actions { display:flex; gap:8px; margin-top:12px; } .actions button { flex:1; background:var(--soft); }
@@ -59,8 +67,8 @@
 </header>
 <main>
   <div class="pick" id="pickRow">
-    <label class="btn" id="takeBtn"><span id="take">📷</span><input id="file" type="file" accept="image/*" capture="environment" hidden></label>
-    <label class="btn alt" id="albumBtn"><span id="album">🖼</span><input id="file2" type="file" accept="image/*" hidden></label>
+    <label class="btn" id="takeBtn"><span class="ic" aria-hidden="true">📷</span><span id="take"></span><input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+    <label class="btn alt" id="albumBtn"><span class="ic" aria-hidden="true">🖼️</span><span id="album"></span><input id="file2" type="file" accept="image/*" hidden></label>
   </div>
   <p id="notice"></p>
   <details id="samples"><summary id="samplesLabel"></summary><div id="grid"></div></details>
@@ -75,7 +83,7 @@
     <div class="row"><b id="l-do"></b><span id="todo"></span></div>
     <div class="row bridge" id="bridgeRow"><span id="bridge"></span></div>
     <div class="low" id="low"></div>
-    <div class="actions"><button id="play"></button><button id="playKo">🇰🇷 원음</button></div>
+    <div class="actions"><button id="play"></button><button id="playKo">🇰🇷 원음</button></div>
     <button id="moreBtn"></button>
     <div class="more" id="more"></div>
     <div class="meta" id="meta"></div>
@@ -83,15 +91,15 @@
 </main>
 <script>
 const UI = {
-  ja:{take:"📷 写真を撮る", album:"🖼 アルバムから", samples:"サンプル写真で試す", offlineNote:"この公開デモではサンプル写真だけを使えます。", hint:"知りたい文字をタップしてください", meaning:"意味", why:"なぜここに？", todo:"どうすればいい？",
-      play:"▶︎ 聞く", stop:"■ 止める", more:"🔎 もっと詳しく", moreWait:"調べています…", src:"出典", low:"自信が低い結果です", thinking:"読んでいます…",
-      err:"うまく読み取れませんでした。", offline:"公開デモでは、サンプル写真の解説だけを再生しています。下の写真を選んでください。", timeout:"時間がかかりすぎています。", retry:"もう一度", voice:"ja-JP"},
-  en:{take:"📷 Take a photo", album:"🖼 From library", samples:"Try a sample photo", offlineNote:"This public demo works with the sample photos only.", hint:"Tap the Korean text you want to understand", meaning:"Meaning", why:"Why is it here?", todo:"What should I do?",
-      play:"▶︎ Listen", stop:"■ Stop", more:"🔎 Tell me more", moreWait:"Looking it up…", src:"Source", low:"Low-confidence answer", thinking:"Reading the sign…",
-      err:"Something went wrong.", offline:"This public demo replays the sample photos only. Pick one below.", timeout:"This is taking too long.", retry:"Try again", voice:"en-US"},
-  zh:{take:"📷 拍照", album:"🖼 从相册选择", samples:"用示例照片试试", offlineNote:"此公开演示仅支持示例照片。", hint:"点击你想了解的韩文", meaning:"意思", why:"为什么在这里？", todo:"我该怎么做？",
-      play:"▶︎ 收听", stop:"■ 停止", more:"🔎 了解更多", moreWait:"正在查找…", src:"来源", low:"置信度较低", thinking:"正在识别…",
-      err:"出了点问题。", offline:"公开演示只播放示例照片的结果，请选择下方的照片。", timeout:"等待时间过长。", retry:"重试", voice:"zh-CN"},
+  ja:{take:"カメラ", album:"アルバム", samples:"サンプル写真で試す", offlineNote:"この公開デモではサンプル写真だけを使えます。", hint:"知りたい文字をタップしてください", meaning:"意味", why:"なぜここに？", todo:"どうすればいい？",
+      play:"▶︎ 聞く", stop:"■ 止める", more:"🔎 もっと詳しく", moreWait:"調べています…", src:"出典", low:"自信が低い結果です", thinking:"読んでいます…",
+      err:"うまく読み取れませんでした。", offline:"公開デモでは、サンプル写真の解説だけを再生しています。上のサンプル写真を選んでください。", timeout:"時間がかかりすぎています。", retry:"もう一度", voice:"ja-JP"},
+  en:{take:"Camera", album:"Library", samples:"Try a sample photo", offlineNote:"This public demo works with the sample photos only.", hint:"Tap the Korean text you want to understand", meaning:"Meaning", why:"Why is it here?", todo:"What should I do?",
+      play:"▶︎ Listen", stop:"■ Stop", more:"🔎 Tell me more", moreWait:"Looking it up…", src:"Source", low:"Low-confidence answer", thinking:"Reading the sign…",
+      err:"Something went wrong.", offline:"This public demo replays the sample photos only. Pick one of the sample photos above.", timeout:"This is taking too long.", retry:"Try again", voice:"en-US"},
+  zh:{take:"拍照", album:"相册", samples:"用示例照片试试", offlineNote:"此公开演示仅支持示例照片。", hint:"点击你想了解的韩文", meaning:"意思", why:"为什么在这里？", todo:"我该怎么做？",
+      play:"▶︎ 收听", stop:"■ 停止", more:"🔎 了解更多", moreWait:"正在查找…", src:"来源", low:"置信度较低", thinking:"正在识别…",
+      err:"出了点问题。", offline:"公开演示只播放示例照片的结果，请选择上方的示例照片。", timeout:"等待时间过长。", retry:"重试", voice:"zh-CN"},
 };
 // Preferred voices per language, best first (iOS / macOS / Chrome names).
 const VOICE_PREF = {
@@ -222,7 +230,10 @@ function render(data, secs){
   clearMarks(".box");
   if (data.box) addRect("box", data.box, data.image_size[0], data.image_size[1]);
   $("ko").textContent = r.korean_text;
+  const n = [...r.korean_text].length; $("ko").className = "ko" + (n > 60 ? " xlong" : n > 18 ? " long" : "");
   $("rom").textContent = [r.romanization, r.pronunciation_hint].filter(Boolean).join("  ·  ");
+  // Long readings (menus) are cut to 3 lines so the meaning stays on screen; tap to expand.
+  $("rom").classList.toggle("clamp", $("rom").textContent.length > 110); $("rom").onclick = () => $("rom").classList.remove("clamp");
   $("meaning").textContent = r.meaning; $("why").textContent = r.why_here; $("todo").textContent = r.what_to_do;
   $("bridge").textContent = r.native_bridge; $("bridgeRow").style.display = r.native_bridge ? "block" : "none";
   $("low").textContent = r.confidence === "low" ? u().low : "";
@@ -273,7 +284,7 @@ fetch("/api/demo").then(r => r.json()).then(d => {
     const img = document.createElement("img"); img.src = "/demo-images/" + p.file; img.alt = p.file; img.loading = "lazy";
     img.onclick = async () => {
       const blob = await (await fetch(img.src)).blob();
-      if (!DEMO) $("samples").open = false;
+      if (!DEMO && LIVE) $("samples").open = false;
       loadPhoto(new File([blob], p.file, {type:"image/jpeg"}), p.taps);
     };
     $("grid").appendChild(img);
