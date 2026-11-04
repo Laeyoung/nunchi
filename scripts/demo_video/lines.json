@@ -1,0 +1,12 @@
+{
+"n1": "You land in Seoul, and every sign is a wall of letters you can't read. A translation app turns them into words. But standing in front of a sign, you need more than words. Why is it here? And what should I do, right now?",
+"n2": "This is Nunchi. Point your phone at a Korean sign, tap the text, and hear the answer in your own language.",
+"n3": "Here, a Japanese traveller opens a photo. SAM 3.1 outlines the sign candidates right away. One tap picks a sign, and Muse Spark 1.3 reads it together with the whole scene.",
+"n4": "Look at the bridge line. Il-bang-tong-haeng is written with the same characters as the Japanese word for one-way. Many Korean words share Chinese-character roots with Japanese, and Nunchi points them out.",
+"n5": "A restaurant menu. Nunchi reads the dishes and prices, and tells you how to order.",
+"n6": "This restroom sign is where a plain translation falls short. Nunchi says what to do, and why there is no trash can.",
+"n7": "Tell me more asks Muse Spark again, this time with web search, and shows where the answer came from.",
+"n8": "Switch to English, and the same tap gives a new card. With no shared vocabulary, the bridge becomes a reading tip instead.",
+"n9": "Under the hood: a single-page web app and a small FastAPI server. SAM 3.1 finds candidates with a concept prompt, and the tapped region with a point prompt. Muse Spark returns strict JSON with minimal reasoning effort, so a new card takes about eight to nine seconds. Results are cached, so the demo replays even offline.",
+"n10": "Everything you saw was built during this hackathon. Next up: voice questions with Muse Voice Transcribe, and more languages. Nunchi. Read the room, in Korea."
+}

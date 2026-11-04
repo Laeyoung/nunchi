@@ -12,6 +12,15 @@ It is a mobile web app (PWA): open the URL in the phone browser, no install need
 
 **Demo video:** _coming soon_
 
+## Built during the hackathon
+Everything in this repository was written during the Meta Global AI Developer Hackathon building period
+(Oct 27 – Nov 4, 2026); there is no earlier codebase. See the git history. That covers:
+- the tap-to-region pipeline (SAM 3.1 concept candidates, point prompt, fallback rules),
+- the prompts and the strict 10-field JSON schema for Muse Spark 1.3, including the native-language bridge rules,
+- "Tell me more" with web search and sources,
+- the mobile web app (camera, candidate boxes, narration, demo mode, PWA),
+- the cache, rate limit, spend ledger and budget guard, and the test/regression scripts.
+
 ## Why
 A translation of 「휴지통 없는 화장실」 tells you "restroom without a trash can". It does not tell you that the
 paper goes in the toilet, or why. Travellers standing in front of a sign need the reason and the next action,
@@ -80,6 +89,7 @@ Open the printed URL in iPhone Safari. Narration uses the device voices (best on
 - `scripts/batch_test.py test-images ja en` — whole-photo explanation for every image → `report.html` for human review + keyword check against `scripts/expectations.json`.
 - `scripts/warm_cache.py` — fills `cache/` for every demo photo × preset tap × language (and its "Tell me more") through the real endpoints and checks `korean_text` against `scripts/expectations.json`.
 - `scripts/webkit_check.py` — demo flow in Playwright WebKit with iPhone 13 emulation (cache only, no cost; needs `playwright install webkit`).
+- `scripts/demo_video/build.sh` — rebuilds the demo video from the running app (cached results only).
 - `scripts/usage_report.py` — estimated Meta API spend from `usage/usage.jsonl`; live calls stop at `BUDGET_USD` (default 50).
 
 ## How a tap is resolved

@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  :root { --bg:#14110f; --fg:#f6f1ea; --dim:#b9afa4; --accent:#e5484d; --warm:#ffcf7a; }
+  * { box-sizing:border-box; margin:0; }
+  html, body { width:1920px; height:1080px; overflow:hidden; background:var(--bg); color:var(--fg);
+    font-family:-apple-system, "SF Pro Display", "Hiragino Sans", "Apple SD Gothic Neo", sans-serif; }
+  #phone { position:absolute; left:190px; top:34px; width:492px; height:1012px; border-radius:62px; background:#000;
+    box-shadow:0 0 0 3px #3a3430, 0 30px 80px rgba(0,0,0,.6); padding:18px 18px; }
+  #screen { width:456px; height:976px; border-radius:46px; overflow:hidden; background:#f5f2ee; position:relative; }
+  #app { width:390px; height:835px; border:0; transform:scale(1.169); transform-origin:0 0; }
+  #panel { position:absolute; left:800px; top:120px; width:1000px; }
+  #step { font-size:30px; font-weight:700; color:var(--accent); letter-spacing:.06em; text-transform:uppercase; min-height:40px; }
+  #title { font-size:64px; font-weight:800; line-height:1.12; margin-top:18px; }
+  #note { font-size:30px; color:var(--dim); line-height:1.45; margin-top:28px; max-width:960px; }
+  #note b { color:var(--warm); font-weight:600; }
+  #steps { margin-top:46px; display:flex; flex-direction:column; gap:16px; }
+  .st { font-size:30px; color:#6f655c; display:flex; gap:18px; align-items:center; transition:color .3s; }
+  .st i { font-style:normal; width:46px; height:46px; border-radius:50%; border:2px solid currentColor; display:grid; place-items:center; font-size:24px; font-weight:700; }
+  .st.on { color:var(--fg); } .st.on i { background:var(--accent); border-color:var(--accent); }
+  #sub { position:absolute; left:800px; right:90px; bottom:70px; font-size:34px; line-height:1.4; color:var(--fg);
+    background:rgba(0,0,0,.45); padding:18px 26px; border-radius:14px; display:none; }
+  #sub small { display:block; font-size:22px; color:var(--dim); margin-bottom:6px; letter-spacing:.04em; }
+  #ripple { position:absolute; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%; border:5px solid #fff;
+    background:rgba(229,72,77,.35); pointer-events:none; opacity:0; }
+  #ripple.go { animation:rip .9s ease-out; }
+  @keyframes rip { 0% { transform:scale(.4); opacity:1 } 100% { transform:scale(1.6); opacity:0 } }
+  #slide { position:absolute; inset:0; background:var(--bg); display:none; z-index:5; }
+  .fade { animation:fi .6s ease-out; } @keyframes fi { from { opacity:0 } to { opacity:1 } }
+  /* slide: problem */
+  .collage { position:absolute; inset:0; display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:270px; gap:6px; opacity:.32; filter:saturate(.8); }
+  .collage img { width:100%; height:100%; object-fit:cover; }
+  .center { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:0 160px; }
+  .big { font-size:84px; font-weight:800; line-height:1.1; }
+  .mid { font-size:40px; color:var(--dim); margin-top:30px; line-height:1.4; }
+  .logo { font-size:150px; font-weight:900; letter-spacing:-.02em; }
+  .logo span { color:var(--accent); }
+  .tag { font-size:46px; margin-top:16px; }
+  .by { font-size:28px; color:var(--dim); margin-top:60px; }
+  /* architecture */
+  .arch { position:absolute; left:120px; right:120px; top:250px; height:520px; }
+  .node { position:absolute; background:#231e1a; border:2px solid #4a413a; border-radius:18px; padding:20px 24px; font-size:28px; line-height:1.3; }
+  .node b { display:block; font-size:32px; color:var(--fg); } .node span { color:var(--dim); font-size:24px; }
+  .node.meta { border-color:var(--accent); background:#2c1a1b; }
+  svg.edges { position:absolute; inset:0; overflow:visible; }
+  .credits { position:absolute; left:160px; right:160px; bottom:60px; font-size:19px; color:#8a8077; line-height:1.5; }
+</style></head>
+<body>
+<div id="phone"><div id="screen"><iframe id="app"></iframe></div></div>
+<div id="panel">
+  <div id="step"></div><div id="title"></div><div id="note"></div>
+  <div id="steps">
+    <div class="st" data-k="tap"><i>1</i>Tap — SAM 3.1 finds the sign</div>
+    <div class="st" data-k="explain"><i>2</i>Explain — Muse Spark 1.3, strict JSON</div>
+    <div class="st" data-k="listen"><i>3</i>Listen — narration in your language</div>
+    <div class="st" data-k="more"><i>+</i>Tell me more — web search with sources</div>
+  </div>
+</div>
+<div id="sub"></div>
+<div id="ripple"></div>
+<div id="slide"></div>
+<script>
+const $ = id => document.getElementById(id);
+function scene({step="", title="", note="", on=[]}){
+  $("step").textContent = step; $("title").innerHTML = title; $("note").innerHTML = note;
+  document.querySelectorAll(".st").forEach(s => s.classList.toggle("on", on.includes(s.dataset.k)));
+  $("panel").classList.remove("fade"); void $("panel").offsetWidth; $("panel").classList.add("fade");
+}
+function sub(text, label=""){ const s = $("sub"); if (!text) { s.style.display = "none"; return; }
+  s.innerHTML = (label ? `<small>${label}</small>` : "") + text; s.style.display = "block"; }
+function ripple(x, y){ const r = $("ripple"); r.style.left = x+"px"; r.style.top = y+"px"; r.classList.remove("go"); void r.offsetWidth; r.classList.add("go"); }
+function slide(html){ const s = $("slide"); if (!html) { s.style.display = "none"; return; }
+  s.innerHTML = html; s.style.display = "block"; s.classList.remove("fade"); void s.offsetWidth; s.classList.add("fade"); }
+</script>
+</body></html>
