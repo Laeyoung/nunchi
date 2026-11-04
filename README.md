@@ -11,7 +11,7 @@ Translation apps change the letters. Nunchi explains the place.
 It is a mobile web app (PWA): open the URL in the phone browser, no install needed.
 
 **Live demo:** https://nunchi-three.vercel.app (cache-only: replays the sample photos, no model calls)  
-**Demo video (3 min):** https://youtu.be/nPWfB1cW7Lg
+**Demo video (2:41):** https://youtu.be/nPWfB1cW7Lg
 
 ## Built during the hackathon
 Everything in this repository was written during the Meta Global AI Developer Hackathon building period
