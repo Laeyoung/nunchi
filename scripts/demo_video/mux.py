@@ -10,6 +10,6 @@ for i, q in enumerate(c["cues"]):
 filt.append("".join(labels) + f"amix=inputs={len(labels)}:normalize=0:dropout_transition=0,apad,atrim=0:{total:.2f},loudnorm=I=-16:TP=-1.5[aout]")
 cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", f"{V}/frames.txt", *inputs,
        "-filter_complex", ";".join(filt) + ";[0:v]fps=30,format=yuv420p[vout]", "-map", "[vout]", "-map", "[aout]",
-       "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
+       "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart",
        "-t", f"{total:.2f}", f"{V}/nunchi-demo.mp4"]
 subprocess.run(cmd, check=True); print("ok", round(total, 1))
