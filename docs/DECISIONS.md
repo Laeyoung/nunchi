@@ -92,7 +92,6 @@ Meta API에는 잔액을 조회하는 방법이 없습니다. 그래서 응답�
 ## 미뤄둔 일 · 확인 필요
 
 - iPhone Safari 실기기 확인: WebKit 에뮬레이션으로 대신했지만 카메라와 iOS 음성 정책은 남아 있습니다. iPhone을 빌릴 수 있으면 cloudflared URL로 5분이면 확인됩니다. Android 휴대폰이 있으면 Chrome으로 카메라 흐름은 확인할 수 있습니다.
-- LICENSE 저작권자 표기: 지금은 "Nunchi authors"입니다.
 - 데모 영상: 제작 완료(2분 41초, `../nunchi-demo.mp4`, 저장소 밖). YouTube 등에 올린 뒤 README와 제출 양식에 링크를 넣어야 합니다.
 - 저장소 public 전환: 제출 직전에.
 - 해커톤 규정(참가자 가이드): 저장소 public, 3분 데모 영상, 해커톤 기간에 만든 부분 명시, 마감 11-04 21:00 ET(11-05 11:00 KST).
