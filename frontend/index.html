@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="icon-192.png">
-<title>Nunchi</title>
+<title>Nunchi 눈치</title>
 <style>
   :root { --ink:#1b1b1f; --accent:#e5484d; --soft:#f4f1ec; }
   * { box-sizing:border-box; }
@@ -47,7 +47,7 @@
 </head>
 <body>
 <header>
-  <h1><span id="appName">Nunchi</span><small id="tagline">찍으면 들리는 한국</small></h1>
+  <h1><span id="appName">Nunchi 눈치</span><small id="tagline">찍으면 들리는 한국</small></h1>
   <select id="lang" aria-label="language">
     <option value="ja">日本語</option><option value="en">English</option><option value="zh">中文</option>
   </select>
@@ -96,7 +96,8 @@ let file = null, last = null, demoTaps = null, seq = 0;
 const u = () => UI[$("lang").value];
 
 fetch("/api/config").then(r => r.json()).then(c => {
-  $("appName").textContent = c.name; $("tagline").textContent = c.tagline; document.title = c.name + " · " + c.tagline;
+  const nm = c.name_ko ? c.name + " " + c.name_ko : c.name;
+  $("appName").textContent = nm; $("tagline").textContent = c.tagline; document.title = nm + " · " + c.tagline;
 }).catch(() => {});
 
 function t(){
@@ -207,6 +208,13 @@ function render(data, secs){
 let voices = [], speaking = false;
 function loadVoices(){ voices = speechSynthesis.getVoices(); }
 loadVoices(); speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
+// iOS Safari only allows speech that starts inside a user gesture. Narration starts after a network
+// round-trip, so speak an empty utterance on the first touch to unlock later async speech.
+function unlockSpeech(){
+  try { const s = new SpeechSynthesisUtterance(" "); s.volume = 0; speechSynthesis.speak(s); } catch {}
+  document.removeEventListener("touchend", unlockSpeech, true); document.removeEventListener("click", unlockSpeech, true);
+}
+document.addEventListener("touchend", unlockSpeech, true); document.addEventListener("click", unlockSpeech, true);
 function pickVoice(lang){
   const norm = v => v.lang.replace("_", "-");
   const same = voices.filter(v => norm(v) === lang), loose = voices.filter(v => norm(v).startsWith(lang.slice(0, 2)));

@@ -1,10 +1,14 @@
-# Nunchi · 찍으면 들리는 한국
+# Nunchi (눈치) · 찍으면 들리는 한국
+
+_Nunchi_ (눈치) is the Korean knack for reading a situation without being told.
 
 Point your phone at a Korean sign, menu or notice, tap the text, and hear in your own language
 what it says, **why it is there**, and **what you should do now**, plus a link to your native language
 (e.g. 일방통행 = 一方通行 for Japanese travellers).
 
 Translation apps change the letters. Nunchi explains the place.
+
+It is a mobile web app (PWA): open the URL in the phone browser, no install needed.
 
 **Demo video:** _coming soon_
 
@@ -66,7 +70,7 @@ Open the printed URL in iPhone Safari. Narration uses the device voices (best on
 | `MAX_SIDE` | `1280` | longest image side sent to the models |
 | `SEND_FULL` | `1` | send full photo + tapped crop (`0` = crop only) |
 | `HEDGE_S` / `REQUEST_TIMEOUT_S` | `9` / `20` | duplicate a slow Spark request after 9 s; give up after 20 s |
-| `APP_NAME` | `Nunchi` | app name shown in the UI |
+| `APP_NAME` / `APP_NAME_KO` | `Nunchi` / `눈치` | app name shown in the UI |
 | `LIVE` | `1` | `0` = serve cached results only (safe public demo link) |
 | `RATE_PER_MIN` | `20` | live model calls per client IP per minute |
 | `BUDGET_USD` | `50` | stop live calls when estimated spend reaches this |
@@ -75,6 +79,7 @@ Open the printed URL in iPhone Safari. Narration uses the device voices (best on
 - `scripts/latency_test.py` — compares effort / image size / crop-only settings.
 - `scripts/batch_test.py test-images ja en` — whole-photo explanation for every image → `report.html` for human review + keyword check against `scripts/expectations.json`.
 - `scripts/warm_cache.py` — fills `cache/` for every demo photo × preset tap × language (and its "Tell me more") through the real endpoints and checks `korean_text` against `scripts/expectations.json`.
+- `scripts/webkit_check.py` — demo flow in Playwright WebKit with iPhone 13 emulation (cache only, no cost; needs `playwright install webkit`).
 - `scripts/usage_report.py` — estimated Meta API spend from `usage/usage.jsonl`; live calls stop at `BUDGET_USD` (default 50).
 
 ## How a tap is resolved

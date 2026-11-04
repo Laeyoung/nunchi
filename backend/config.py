@@ -8,6 +8,7 @@ load_dotenv(ROOT / ".env")
 load_dotenv(ROOT.parent / ".env")  # also accept the key one level up (outside the repo)
 
 APP_NAME = os.environ.get("APP_NAME", "Nunchi")
+APP_NAME_KO = os.environ.get("APP_NAME_KO", "눈치")
 APP_TAGLINE = "찍으면 들리는 한국"
 
 BASE_URL = "https://api.meta.ai/v1"

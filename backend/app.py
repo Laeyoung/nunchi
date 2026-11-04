@@ -71,7 +71,7 @@ def _fail(e: Exception, where: str) -> JSONResponse:
 
 @app.get("/api/config")
 def config():
-    return {"name": cfg.APP_NAME, "tagline": cfg.APP_TAGLINE}
+    return {"name": cfg.APP_NAME, "name_ko": cfg.APP_NAME_KO, "tagline": cfg.APP_TAGLINE}
 
 
 def _seg_path(digest: str):
